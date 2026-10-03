@@ -1,0 +1,57 @@
+{
+  "agent_name": "TwitterScraperNLU",
+  "default_language_code": "en",
+  "intents": [
+    {
+      "name": "scrape.tweets",
+      "training_phrases": [
+        "Scrape live tweets for #technology from 2025-05-01 to 2025-05-15",
+        "Collect 50 tweets about #bitcoin between 2025-01-01 and 2025-01-10",
+        "Get 100 recent tweets with hashtag #AI",
+        "Scrape tweets for #MachineLearning in the last 7 days",
+        "Find tweets containing #Python since 2025-06-01 until 2025-06-18 limit 200",
+        "Extract live tweets for #Crypto with limit 30",
+        "Search live tweets #DataScience starting from 2025-03-01 to 2025-03-20"
+      ],
+      "parameters": [
+        {
+          "name": "hashtag",
+          "entity_type": "@sys.any",
+          "mandatory": true,
+          "prompts": ["What hashtag or topic would you like to scrape?"]
+        },
+        {
+          "name": "start_date",
+          "entity_type": "@sys.date-time",
+          "mandatory": false
+        },
+        {
+          "name": "end_date",
+          "entity_type": "@sys.date-time",
+          "mandatory": false
+        },
+        {
+          "name": "limit",
+          "entity_type": "@sys.number",
+          "mandatory": false,
+          "default_value": 50
+        },
+        {
+          "name": "language",
+          "entity_type": "@sys.language",
+          "mandatory": false,
+          "default_value": "en"
+        }
+      ]
+    },
+    {
+      "name": "system.help",
+      "training_phrases": [
+        "How do I use this scraper?",
+        "Help me scrape tweets",
+        "What formats are supported?",
+        "Show commands"
+      ]
+    }
+  ]
+}
