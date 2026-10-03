@@ -190,7 +190,15 @@ if "active_request" not in st.session_state:
     st.session_state["active_request"] = None
 
 settings = get_settings()
-session_mgr = SessionManager()
+custom_auth = st.session_state.get("custom_auth_token", "")
+custom_ct0 = st.session_state.get("custom_ct0", "")
+
+if custom_auth:
+    settings.TWITTER_AUTH_TOKEN = custom_auth
+    if custom_ct0:
+        settings.TWITTER_CT0 = custom_ct0
+
+session_mgr = SessionManager(settings=settings)
 
 # -----------------------------------------------------------------------------
 # 5. SIDEBAR: STATUS & CONFIGURATION
@@ -200,14 +208,6 @@ with st.sidebar:
     st.title("🎛️ Scraper Cockpit")
 
     # Session Status Indicator
-    custom_auth = st.session_state.get("custom_auth_token", "")
-    custom_ct0 = st.session_state.get("custom_ct0", "")
-
-    if custom_auth:
-        settings.TWITTER_AUTH_TOKEN = custom_auth
-        if custom_ct0:
-            settings.TWITTER_CT0 = custom_ct0
-
     has_session = session_mgr.has_saved_session() or session_mgr.has_direct_cookies()
     if has_session:
         st.success("🟢 Authenticated Session Active")
@@ -374,11 +374,7 @@ if scrape_request:
             st.write(f"🌐 Navigating to search stream for `{scrape_request.query}`...")
 
             # Run Async Scraper Engine
-            engine = TwitterScraperEngine()
-            if custom_auth:
-                engine.session_manager.settings.TWITTER_AUTH_TOKEN = custom_auth
-                if custom_ct0:
-                    engine.session_manager.settings.TWITTER_CT0 = custom_ct0
+            engine = TwitterScraperEngine(settings=settings)
             engine.throttler.min_delay = min_delay
             engine.throttler.max_delay = max_delay
 

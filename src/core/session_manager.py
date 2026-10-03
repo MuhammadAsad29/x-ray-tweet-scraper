@@ -12,8 +12,8 @@ logger = logging.getLogger(__name__)
 class SessionManager:
     """Handles session persistence, cookie injection, and interactive login."""
 
-    def __init__(self):
-        self.settings = get_settings()
+    def __init__(self, settings=None):
+        self.settings = settings or get_settings()
         self.state_file_path = self.settings.get_auth_state_path()
 
     def has_saved_session(self) -> bool:

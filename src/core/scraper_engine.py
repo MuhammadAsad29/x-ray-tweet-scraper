@@ -17,7 +17,8 @@ class TwitterScraperEngine:
 
     def __init__(self, settings=None):
         self.settings = settings or get_settings()
-        self.session_mgr = SessionManager()
+        self.session_mgr = SessionManager(settings=self.settings)
+        self.session_manager = self.session_mgr
         self.throttler = PoliteThrottler(
             min_delay=self.settings.MIN_SCROLL_DELAY,
             max_delay=self.settings.MAX_SCROLL_DELAY,
