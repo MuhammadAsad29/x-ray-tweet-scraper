@@ -117,30 +117,49 @@ class LocalNLUParser:
 
     @staticmethod
     def _extract_query(text: str) -> str:
-        """Extracts target hashtag (#topic) or keywords from the natural text."""
-        # 1. Direct hashtag check (Twitter hashtags are alphanumeric + underscores)
-        hashtags = re.findall(r"#[a-zA-Z0-9_]+", text)
+        """Extracts target hashtag (#topic), user handle (@user), or keywords from natural text."""
+        # 1. Direct hashtag check (Twitter hashtags can contain #web3, #crypto, etc.)
+        hashtags = re.findall(r"#[a-zA-Z0-9_\.]+", text)
         if hashtags:
             return " ".join(hashtags)
 
-        # 2. Extract after trigger words like "about", "for", "with", "hashtag", "query", "topic"
+        # 2. Direct user handle check: "of @user", "by @user", "from @user", "@user"
+        user_from_match = re.search(r"(?:by|of|from)\s+@([a-zA-Z0-9_]{1,15})\b", text, re.IGNORECASE)
+        if user_from_match:
+            return f"from:{user_from_match.group(1)}"
+
+        user_mention_match = re.search(r"@([a-zA-Z0-9_]{1,15})\b", text)
+        if user_mention_match:
+            return f"@{user_mention_match.group(1)}"
+
+        # 3. Extract after trigger words like "about", "for", "with", "hashtag", "topic", "keyword", "search", "regarding"
         trigger_match = re.search(
-            r"(?:about|for|with|hashtag|topic|keyword|search)\s+[\"']?([^\"'\n,]+?)[\"']?"
-            r"(?:\s+(?:from|since|between|in the last|with limit|limit|max|during|with min|min)|\s*$)",
+            r"(?:about|for|with|hashtag|topic|keyword|search|regarding|of|by|on)\s+[\"']?([^\"'\n,]+?)[\"']?"
+            r"(?:\s+(?:from|since|between|in the last|with limit|limit|max|during|with min|min\s+\d+)|\s*$)",
             text,
             re.IGNORECASE
         )
         if trigger_match:
             candidate = trigger_match.group(1).strip()
-            cleaned = re.sub(r"\b(tweets|live tweets|top tweets|latest tweets|posts)\b", "", candidate, flags=re.IGNORECASE).strip()
+            # Clean common filler prefixes/suffixes
+            cleaned = re.sub(
+                r"\b(tweets|live tweets|top tweets|latest tweets|posts|of|by|for|about|with)\b",
+                "",
+                candidate,
+                flags=re.IGNORECASE
+            ).strip()
+            cleaned = re.sub(r"^(?:of|by|for|about|with|from)\s+", "", cleaned, flags=re.IGNORECASE).strip()
             if cleaned:
                 return cleaned
 
+        # 4. Fallback cleanup removing all command words and numbers
         cleaned = re.sub(
-            r"(?:scrape|collect|fetch|find|get|search|live|top|latest|recent|highest reach|popular|tweets|posts|from|to|between|since|until|\d{4}-\d{2}-\d{2}|\d+)",
+            r"\b(?:scrape|collect|fetch|find|get|search|live|top|latest|recent|highest reach|popular|tweets|posts|from|to|between|since|until|min|minimum|likes|retweets|rts|faves|favorites|of|by|with|for|about|at least)\b",
             "",
             text,
             flags=re.IGNORECASE
-        ).strip()
+        )
+        cleaned = re.sub(r"\b\d{4}-\d{2}-\d{2}\b", "", cleaned)
+        cleaned = re.sub(r"\b\d+\b", "", cleaned)
         cleaned = re.sub(r"\s+", " ", cleaned).strip()
         return cleaned if cleaned else "#trending"

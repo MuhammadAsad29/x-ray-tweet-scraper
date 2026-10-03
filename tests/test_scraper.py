@@ -34,13 +34,24 @@ class TestTwitterScraper(unittest.TestCase):
     def test_nlu_dotted_hashtag_and_combined_phrasing(self):
         prompt = "top 10 latest tweets for #web3.0 with min 70 likes"
         req = LocalNLUParser.parse_prompt(prompt)
-        self.assertEqual(req.query, "#web3")
+        self.assertEqual(req.query, "#web3.0")
         self.assertEqual(req.limit, 10)
         self.assertEqual(req.min_likes, 70)
         self.assertFalse(req.f_live)  # Targeted 'Top' tab because min_likes was requested
         query_str = req.build_search_query()
-        self.assertIn("#web3", query_str)
+        self.assertIn("#web3.0", query_str)
         self.assertIn("min_faves:70", query_str)
+
+    def test_nlu_handle_extraction(self):
+        prompt = "top 10 tweets of @aixbt_agent"
+        req = LocalNLUParser.parse_prompt(prompt)
+        self.assertEqual(req.query, "from:aixbt_agent")
+        self.assertEqual(req.limit, 10)
+
+        prompt_by = "scrape 25 tweets by @elonmusk"
+        req_by = LocalNLUParser.parse_prompt(prompt_by)
+        self.assertEqual(req_by.query, "from:elonmusk")
+        self.assertEqual(req_by.limit, 25)
 
     def test_nlu_relative_date_extraction(self):
         prompt = "Collect 30 tweets about #AI in the last 7 days"
