@@ -16,12 +16,24 @@ try:
 except ImportError:
     HAS_PLOTLY = False
 
+import os
+import subprocess
 from config.settings import get_settings
 from src.core.scraper_engine import TwitterScraperEngine
 from src.core.session_manager import SessionManager
 from src.nlu.dialogflow_client import DialogflowNLUClient
 from src.nlu.local_nlu_fallback import LocalNLUParser
 from src.nlu.models import ScrapeRequest
+
+@st.cache_resource
+def ensure_playwright_browsers():
+    """Ensures Chromium binaries are installed on cloud deployment platforms."""
+    try:
+        subprocess.run(["playwright", "install", "chromium"], check=False)
+    except Exception:
+        pass
+
+ensure_playwright_browsers()
 
 # -----------------------------------------------------------------------------
 # 1. PAGE CONFIGURATION & THEME
@@ -188,16 +200,33 @@ with st.sidebar:
     st.title("🎛️ Scraper Cockpit")
 
     # Session Status Indicator
+    custom_auth = st.session_state.get("custom_auth_token", "")
+    custom_ct0 = st.session_state.get("custom_ct0", "")
+
+    if custom_auth:
+        settings.TWITTER_AUTH_TOKEN = custom_auth
+        if custom_ct0:
+            settings.TWITTER_CT0 = custom_ct0
+
     has_session = session_mgr.has_saved_session() or session_mgr.has_direct_cookies()
     if has_session:
         st.success("🟢 Authenticated Session Active")
         if session_mgr.has_direct_cookies():
-            st.caption("🔑 Cookies loaded from `.env` (`auth_token`/`ct0`)")
+            st.caption("🔑 Cookies loaded (`auth_token` / `ct0`)")
         else:
             st.caption("💾 Storage state loaded from `auth_state.json`")
     else:
-        st.error("🔴 No Session Detected")
-        st.caption("Add `TWITTER_AUTH_TOKEN` to `.env` or run `python main.py --login`.")
+        st.warning("🟡 Guest / Unauthenticated Mode")
+        st.caption("Configure `.env`, add secrets on Streamlit Cloud, or paste cookies below.")
+
+    with st.expander("🔑 Session & Cookie Settings", expanded=not has_session):
+        st.caption("For cloud demo testing, paste your X session cookies:")
+        user_auth_token = st.text_input("auth_token", value=custom_auth, type="password", help="X auth_token cookie value")
+        user_ct0 = st.text_input("ct0 (CSRF token)", value=custom_ct0, type="password", help="X ct0 cookie value")
+        if user_auth_token != custom_auth or user_ct0 != custom_ct0:
+            st.session_state["custom_auth_token"] = user_auth_token
+            st.session_state["custom_ct0"] = user_ct0
+            st.rerun()
 
     st.markdown("---")
 
@@ -346,6 +375,10 @@ if scrape_request:
 
             # Run Async Scraper Engine
             engine = TwitterScraperEngine()
+            if custom_auth:
+                engine.session_manager.settings.TWITTER_AUTH_TOKEN = custom_auth
+                if custom_ct0:
+                    engine.session_manager.settings.TWITTER_CT0 = custom_ct0
             engine.throttler.min_delay = min_delay
             engine.throttler.max_delay = max_delay
 

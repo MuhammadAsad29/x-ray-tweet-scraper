@@ -6,6 +6,16 @@ from pydantic import Field
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
+try:
+    import streamlit as st
+    if hasattr(st, "secrets"):
+        for key in ["TWITTER_AUTH_TOKEN", "TWITTER_CT0", "DIALOGFLOW_PROJECT_ID", "DIALOGFLOW_AGENT_ID", "DIALOGFLOW_LOCATION"]:
+            if key in st.secrets and key not in os.environ:
+                os.environ[key] = str(st.secrets[key])
+except Exception:
+    pass
+
+
 class Settings(BaseSettings):
     """Application settings and configuration parameters."""
 

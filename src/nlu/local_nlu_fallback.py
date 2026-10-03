@@ -26,7 +26,18 @@ class LocalNLUParser:
         # 2. Extract Dates
         since_date, until_date = LocalNLUParser._extract_dates(text)
 
-        # 3. Detect Top / Highest Reach vs Live / Latest Tab
+        # 3. Extract Min Likes / Retweets threshold
+        min_likes = None
+        min_likes_match = re.search(r"(?:min|minimum|at least)\s+(\d+)\s*(?:likes?|faves?|favorites?)", text, re.IGNORECASE)
+        if min_likes_match:
+            min_likes = int(min_likes_match.group(1))
+
+        min_retweets = None
+        min_rt_match = re.search(r"(?:min|minimum|at least)\s+(\d+)\s*(?:retweets?|rts?)", text, re.IGNORECASE)
+        if min_rt_match:
+            min_retweets = int(min_rt_match.group(1))
+
+        # 4. Detect Top / Highest Reach vs Live / Latest Tab
         # If user asks for 'top', 'highest reach', 'viral', 'most liked', OR sets min_likes/min_retweets,
         # we MUST target the 'Top' tab (f_live=False) because live stream tweets have 0-1 likes!
         has_engagement_filter = bool(min_likes or min_retweets)
@@ -37,17 +48,6 @@ class LocalNLUParser:
             f_live = False
         else:
             f_live = True
-
-        # 4. Extract Min Likes / Retweets threshold
-        min_likes = None
-        min_likes_match = re.search(r"(?:min|minimum|at least)\s+(\d+)\s*(?:likes?|faves?|favorites?)", text, re.IGNORECASE)
-        if min_likes_match:
-            min_likes = int(min_likes_match.group(1))
-
-        min_retweets = None
-        min_rt_match = re.search(r"(?:min|minimum|at least)\s+(\d+)\s*(?:retweets?|rts?)", text, re.IGNORECASE)
-        if min_rt_match:
-            min_retweets = int(min_rt_match.group(1))
 
         # 5. Extract Hashtag or Query Topic
         query = LocalNLUParser._extract_query(text)
